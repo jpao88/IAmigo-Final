@@ -53,5 +53,8 @@ uvicorn api_app:app --reload
 
 - `database.sql`: cria o banco, tabelas e dados de exemplo.
 - `.env`: guarda as configurações de conexão.
-- `data/data_manager.py`: faz a conexão entre Python e MySQL.
-- `main.py`: inicia o sistema.
+- `main.py`: inicia o sistema no console (`ui/menus.py`).
+- `api_app.py`: inicia a API (FastAPI).
+
+O console e a API usam as mesmas camadas para acessar o banco:
+`services/` (regras de negócio) → `repositories/` (consultas) → `models/` (tabelas).

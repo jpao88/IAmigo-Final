@@ -19,7 +19,7 @@ def exibir_progresso(tarefas):
         return
 
     total = len(tarefas)
-    concluidas = sum(1 for t in tarefas if t["concluida"])
+    concluidas = sum(1 for t in tarefas if t.concluida)
 
     porcentagem = int((concluidas / total) * 100)
 

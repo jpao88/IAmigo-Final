@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import core.tarefas as core_tarefas
-
 
 ESPERANDO_MENSAGEM = "esperando_mensagem"
 ESPERANDO_PRAZO = "esperando_prazo"
@@ -11,27 +9,13 @@ ESPERANDO_PRIORIDADE = "esperando_prioridade"
 class ConversaTarefa:
     def __init__(
         self,
-        dados: dict = None,
-        usuario: str = None,
+        persistir_tarefa,
         estado: str = None,
-        tarefa: dict = None,
-        persistir_tarefa=None
+        tarefa: dict = None
     ):
-        self.dados = dados
-        self.usuario = usuario
+        self.persistir_tarefa = persistir_tarefa
         self.estado = estado or ESPERANDO_MENSAGEM
         self.tarefa = tarefa or {}
-        self.persistir_tarefa = persistir_tarefa or self._persistir_no_console
-
-    def _persistir_no_console(self, categoria, titulo, prioridade, prazo):
-        core_tarefas.adicionar_tarefa(
-            self.dados,
-            self.usuario,
-            categoria,
-            titulo,
-            prioridade=prioridade,
-            prazo=prazo
-        )
 
     def esta_cadastrando(self) -> bool:
         return self.estado != ESPERANDO_MENSAGEM

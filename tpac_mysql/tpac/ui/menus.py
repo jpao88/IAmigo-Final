@@ -1,22 +1,25 @@
+import random
+from getpass import getpass
+
 from ui.utils import exibir_cabecalho, exibir_barra_status, exibir_progresso
-from data.data_manager import carregar_dados, salvar_dados
-import core.tarefas as core_tarefas
-import core.ia_service as ia_service
-from controllers.usuario_controller import UsuarioController
+from services.usuario_service import UsuarioService
+from services.tarefa_service import TarefaService
 
 from core.interpretador import interpretar_mensagem
 from core.conversa import ConversaTarefa
 
-def criar_usuario_menu(dados: dict):
+usuario_service = UsuarioService()
+tarefa_service = TarefaService()
+
+
+def criar_usuario_menu():
     exibir_cabecalho("BEM-VINDO(A)")
     nome = input("Como você gostaria de ser chamado(a)? ").strip()
     if not nome:
         input("\nNão consegui identificar seu nome. Tente novamente. (ENTER)")
         return
 
-    controller = UsuarioController()
-
-    if nome in controller.listar_perfis():
+    if any(u.nome == nome for u in usuario_service.listar_usuarios()):
         input(f"\nJá encontrei um cadastro com o nome '{nome}'. Tente novamente para seguirmos! (ENTER)")
         return
 
@@ -27,25 +30,26 @@ def criar_usuario_menu(dados: dict):
     pref = input("Opção: ").strip()
     estilo = "direto" if pref == "1" else "detalhado"
 
-    resultado = controller.criar_perfil(nome, estilo)
-    if not resultado["sucesso"]:
-        input(f"\n{resultado['mensagem']} (ENTER)")
+    print("\nSe quiser acessar também pelo site, crie uma senha (mínimo 6 caracteres).")
+    senha = getpass("Senha (ENTER para pular): ")
+
+    try:
+        usuario_service.criar_usuario(nome, estilo, senha or None)
+    except ValueError as erro:
+        input(f"\n{erro} (ENTER)")
         return
 
-    dados[nome] = {
-        "preferencias": {"estilo_instrucao": estilo},
-        "tarefas_diarias": [],
-        "tarefas_educacionais": []
-    }
-    salvar_dados(dados)
     input(f"\nTudo certo, [{nome}]! Seu perfil foi criado. Pressione Enter para continuar.")
 
-def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
+def gerenciar_tarefas_menu(usuario, tipo: str, titulo: str):
     while True:
         exibir_cabecalho(titulo)
-        tarefas = dados[usuario][chave]
+        tarefas = [
+            t for t in tarefa_service.listar_tarefas(usuario.id)
+            if t.tipo == tipo
+        ]
         exibir_progresso(tarefas)
-        
+
         if not tarefas:
             print("""
             ╔════════════════════════════════════╗
@@ -58,12 +62,12 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
             print("\n📋 SUAS ATIVIDADES:\n")
 
             for idx, t in enumerate(tarefas, 1):
-                status = "✅" if t["concluida"] else "⏳"
+                status = "✅" if t.concluida else "⏳"
 
-                print(f"{idx}. {status} {t['titulo']}")
+                print(f"{idx}. {status} {t.titulo}")
 
-                for p in t.get("passos", []):
-                    print(f"    └─ 📌 {p['texto']}")
+                for p in tarefa_service.listar_passos(usuario.id, t.id):
+                    print(f"    └─ 📌 {p.texto}")
 
                 print()
 
@@ -77,8 +81,11 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
             print("\n🤖 Certo! Vamos criar uma nova atividade.")
             t_nome = input("➜ O que você precisa fazer hoje? ").strip()
             if t_nome:
-                core_tarefas.adicionar_tarefa(dados, usuario, chave, t_nome)
-                import random
+                try:
+                    tarefa_service.criar_tarefa(usuario.id, tipo, t_nome)
+                except ValueError as erro:
+                    input(f"\n❌ {erro} Pressione ENTER...")
+                    continue
 
                 mensagens = [
                     "🌟 Excelente! Já anotei isso.",
@@ -92,7 +99,7 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
                 print(f"📌 {t_nome}")
 
                 input("\nPressione ENTER para continuar...")
-            
+
         elif opcao == "2":
             if not tarefas:
                 input(
@@ -107,12 +114,7 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
                 ) - 1
 
                 if 0 <= indice < len(tarefas):
-                    abrir_tarefa_menu(
-                        dados,
-                        usuario,
-                        chave,
-                        indice
-                    )
+                    abrir_tarefa_menu(usuario, tarefas[indice].id)
                 else:
                     input(
                         "\n❌ Tarefa não encontrada. "
@@ -141,40 +143,21 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
                 ) - 1
 
                 if 0 <= indice < len(tarefas):
-                    titulo_tarefa = tarefas[indice]["titulo"]
-
                     print("\n🤖 Criando subtarefas...")
-                    passos = ia_service.gerar_passos_tarefa(
-                        titulo_tarefa
-                    )
 
-                    mensagens_erro = (
-                        "Configure",
-                        "Não foi possível",
-                        "Erro"
-                    )
-
-                    if (
-                        passos
-                        and not passos[0].startswith(mensagens_erro)
-                    ):
-                        core_tarefas.injetar_passos_ia(
-                            dados,
-                            usuario,
-                            chave,
-                            indice,
-                            passos
+                    try:
+                        passos = tarefa_service.gerar_passos(
+                            usuario.id, tarefas[indice].id
                         )
 
                         print("\n✅ Subtarefas criadas pela IA!")
 
                         for numero, passo in enumerate(passos, 1):
-                            print(f"{numero}. {passo}")
-                    else:
-                        print("\n❌ A IA não conseguiu criar os passos.")
+                            print(f"{numero}. {passo.texto}")
 
-                        for mensagem in passos:
-                            print(mensagem)
+                    except RuntimeError as erro:
+                        print("\n❌ A IA não conseguiu criar os passos.")
+                        print(erro)
 
                 else:
                     print("\n❌ Tarefa não encontrada.")
@@ -193,7 +176,7 @@ def gerenciar_tarefas_menu(dados: dict, usuario: str, chave: str, titulo: str):
                 "Pressione ENTER para tentar novamente..."
             )
 
-def painel_ia_menu(dados: dict, usuario: str):
+def painel_ia_menu(usuario):
     exibir_cabecalho("🤖 IAMIGO")
 
     print("""
@@ -211,12 +194,13 @@ def painel_ia_menu(dados: dict, usuario: str):
     print("\nDigite 'cancelar' para cancelar um cadastro.")
     print("Digite 'sair' para retornar.\n")
 
-    estilo = dados[usuario]["preferencias"]["estilo_instrucao"]
+    def persistir_tarefa(categoria, titulo, prioridade, prazo):
+        tarefa_service.criar_tarefa(
+            usuario.id, categoria, titulo,
+            prioridade=prioridade, prazo=prazo
+        )
 
-    conversa_tarefa = ConversaTarefa(
-        dados,
-        usuario
-    )
+    conversa_tarefa = ConversaTarefa(persistir_tarefa)
 
     while True:
         mensagem = input("Você: ").strip()
@@ -230,9 +214,13 @@ def painel_ia_menu(dados: dict, usuario: str):
             continue
 
         if conversa_tarefa.esta_cadastrando():
-            respostas = conversa_tarefa.processar(
-                mensagem
-            )
+            try:
+                respostas = conversa_tarefa.processar(
+                    mensagem
+                )
+            except ValueError as erro:
+                conversa_tarefa.reiniciar()
+                respostas = [f"❌ Não consegui salvar a tarefa: {erro}"]
 
         else:
             interpretacao = interpretar_mensagem(
@@ -249,8 +237,6 @@ def painel_ia_menu(dados: dict, usuario: str):
                 )
 
             else:
-                import random
-
                 frases = [
                     "🤔 Estou pensando...",
                     "🧠 Analisando sua pergunta...",
@@ -261,10 +247,13 @@ def painel_ia_menu(dados: dict, usuario: str):
 
                 print(f"\n{random.choice(frases)}")
 
-                respostas = ia_service.obter_resposta_ia(
-                    mensagem,
-                    estilo
-                )
+                try:
+                    respostas = usuario_service.responder_pergunta(
+                        usuario.id,
+                        mensagem
+                    )
+                except RuntimeError as erro:
+                    respostas = [str(erro)]
 
         print("\n🤖 IAmigo:")
 
@@ -272,11 +261,11 @@ def painel_ia_menu(dados: dict, usuario: str):
             print(f"  {resposta}")
 
         print("\n" + "═" * 46 + "\n")
-        
-def painel_principal_menu(dados: dict, usuario: str):
+
+def painel_principal_menu(usuario):
     while True:
         exibir_cabecalho("PAINEL DO USUÁRIO:")
-        exibir_barra_status(usuario)
+        exibir_barra_status(usuario.nome)
 
         print("""
         ╔════════════════════════════════════╗
@@ -292,37 +281,36 @@ def painel_principal_menu(dados: dict, usuario: str):
         if opcao == "1":
             print("\n🤖 Vamos colocar suas tarefas em ordem!")
             input("\nPressione ENTER para continuar...")
-            gerenciar_tarefas_menu(dados, usuario, "tarefas_diarias", "ROTINA DIÁRIA")
+            gerenciar_tarefas_menu(usuario, "tarefas_diarias", "ROTINA DIÁRIA")
         elif opcao == "2":
             print("\n🤖 Ótimo! Vamos focar nos estudos.")
             input("\nPressione ENTER para continuar...")
-            gerenciar_tarefas_menu(dados, usuario, "tarefas_educacionais", "ESTUDOS E EDUCAÇÃO")
+            gerenciar_tarefas_menu(usuario, "tarefas_educacionais", "ESTUDOS E EDUCAÇÃO")
         elif opcao == "3":
             print("\n🤖 Estou pronto para conversar com você!")
             input("\nPressione ENTER para continuar...")
-            painel_ia_menu(dados, usuario)
+            painel_ia_menu(usuario)
         elif opcao == "4":
             print("\n🤖 Foi muito bom conversar com você hoje.")
             print("👋 Até a próxima!")
             break
 
-def abrir_tarefa_menu(dados, usuario, chave, indice_tarefa):
+def abrir_tarefa_menu(usuario, tarefa_id):
     while True:
-        tarefa = dados[usuario][chave][indice_tarefa]
+        tarefa = tarefa_service.buscar_tarefa(usuario.id, tarefa_id)
+        passos = tarefa_service.listar_passos(usuario.id, tarefa_id)
 
         exibir_cabecalho("TAREFA")
 
-        print(f"\n📁 {tarefa['titulo']}\n")
+        print(f"\n📁 {tarefa.titulo}\n")
         print("Subtarefas:\n")
-
-        passos = tarefa.get("passos", [])
 
         if not passos:
             print("Nenhuma subtarefa criada.")
         else:
             for indice, passo in enumerate(passos, 1):
-                status = "☑" if passo["concluido"] else "☐"
-                print(f"{indice}. {status} {passo['texto']}")
+                status = "☑" if passo.concluido else "☐"
+                print(f"{indice}. {status} {passo.texto}")
 
         print("\n" + "-" * 35)
         print("1 - Nova subtarefa")
@@ -336,13 +324,7 @@ def abrir_tarefa_menu(dados, usuario, chave, indice_tarefa):
             texto = input("\nNome da subtarefa: ").strip()
 
             if texto:
-                core_tarefas.adicionar_passo(
-                    dados,
-                    usuario,
-                    chave,
-                    indice_tarefa,
-                    texto
-                )
+                tarefa_service.adicionar_passo(usuario.id, tarefa_id, texto)
 
                 print("\n✅ Subtarefa adicionada!")
                 input("\nPressione ENTER para continuar...")
@@ -361,12 +343,8 @@ def abrir_tarefa_menu(dados, usuario, chave, indice_tarefa):
                 ) - 1
 
                 if 0 <= indice_passo < len(passos):
-                    core_tarefas.alternar_status_passo(
-                        dados,
-                        usuario,
-                        chave,
-                        indice_tarefa,
-                        indice_passo
+                    tarefa_service.alternar_status_passo(
+                        usuario.id, tarefa_id, passos[indice_passo].id
                     )
 
                     print("\n✅ Status atualizado!")
@@ -392,12 +370,8 @@ def abrir_tarefa_menu(dados, usuario, chave, indice_tarefa):
                 ) - 1
 
                 if 0 <= indice_passo < len(passos):
-                    core_tarefas.excluir_passo(
-                        dados,
-                        usuario,
-                        chave,
-                        indice_tarefa,
-                        indice_passo
+                    tarefa_service.excluir_passo(
+                        usuario.id, tarefa_id, passos[indice_passo].id
                     )
 
                     print("\n🗑️ Subtarefa excluída!")

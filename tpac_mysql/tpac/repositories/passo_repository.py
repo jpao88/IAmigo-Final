@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from config.database import SessionLocal
 from models.passo import Passo
@@ -14,11 +14,28 @@ class PassoRepository:
             )
             return list(session.scalars(comando))
 
+    def _proxima_ordem(self, session, tarefa_id):
+        comando = select(func.max(Passo.ordem)).where(Passo.tarefa_id == tarefa_id)
+        return (session.scalar(comando) or 0) + 1
+
+    def criar(self, tarefa_id, texto):
+        with SessionLocal() as session:
+            passo = Passo(
+                tarefa_id=tarefa_id,
+                texto=texto,
+                ordem=self._proxima_ordem(session, tarefa_id)
+            )
+            session.add(passo)
+            session.commit()
+            session.refresh(passo)
+            return passo
+
     def criar_varios(self, tarefa_id, textos):
         with SessionLocal() as session:
+            inicio = self._proxima_ordem(session, tarefa_id)
             passos = [
                 Passo(tarefa_id=tarefa_id, texto=texto, ordem=indice)
-                for indice, texto in enumerate(textos, start=1)
+                for indice, texto in enumerate(textos, start=inicio)
             ]
             session.add_all(passos)
             session.commit()

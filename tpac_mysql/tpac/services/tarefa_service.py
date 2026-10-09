@@ -109,6 +109,16 @@ class TarefaService:
 
         return self.passo_repository.criar_varios(tarefa_id, textos)
 
+    def adicionar_passo(self, usuario_id, tarefa_id, texto):
+        self._obter_tarefa_do_usuario(usuario_id, tarefa_id)
+
+        texto = texto.strip()
+
+        if not texto:
+            raise ValueError("O texto do passo não pode ficar vazio.")
+
+        return self.passo_repository.criar(tarefa_id, texto)
+
     def alternar_status_passo(self, usuario_id, tarefa_id, passo_id):
         usuario = self.usuario_repository.buscar_por_id(usuario_id)
 

@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from data.data_manager import carregar_dados
+from services.usuario_service import UsuarioService
 from ui.menus import criar_usuario_menu, painel_principal_menu
 from ui.utils import exibir_cabecalho
 
@@ -66,8 +66,10 @@ def tela_carregamento():
         time.sleep(1)
 
 def executar_sistema():
+    usuario_service = UsuarioService()
+
     while True:
-        dados = carregar_dados()
+        usuarios = usuario_service.listar_usuarios()
 
         exibir_logo()
         print("Olá! 👋 Eu sou o IAmigo.")
@@ -86,7 +88,7 @@ def executar_sistema():
         opcao = input("\nEscolha uma opção: ").strip()
         
         if opcao == "1":
-            if not dados:
+            if not usuarios:
                 input("\nNenhum perfil salvo. Crie um primeiro! (Enter)")
                 continue
 
@@ -94,21 +96,23 @@ def executar_sistema():
             print("        ║         PERFIS ENCONTRADOS         ║")
             print("        ╠════════════════════════════════════╣")
 
-            for u in dados:
+            for u in usuarios:
                 # 32 espaços para o nome + 4 espaços do ' 👤 ' = 36 espaços internos (igual ao menu)
-                nome_formatado = u.ljust(32)
+                nome_formatado = u.nome.ljust(32)
                 print(f"        ║ 👤 {nome_formatado}║")
 
             print("        ╚════════════════════════════════════╝")
             nome = input("\n✨ Qual perfil deseja acessar? ").strip()
                 
-            if nome in dados:
-                painel_principal_menu(dados, nome)
+            usuario = next((u for u in usuarios if u.nome == nome), None)
+
+            if usuario is not None:
+                painel_principal_menu(usuario)
             else:
                 input("\n🤖🔍 Opa! Não encontrei esse perfil na minha lista. Pressione ENTER para tentar novamente.")
         
         elif opcao == "2":
-            criar_usuario_menu(dados)
+            criar_usuario_menu()
             
         elif opcao == "3":
             print("\nAté logo 👋, não esqueça de realizar suas tarefas diárias📝!")
