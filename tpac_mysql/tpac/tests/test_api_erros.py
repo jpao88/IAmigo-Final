@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 import api.rotas_auth as rotas_auth
 import api.rotas_tarefas as rotas_tarefas
 import api.rotas_usuarios as rotas_usuarios
-from api.dependencias import exigir_dono_ou_admin
+from api.dependencias import exigir_dono
 from api_app import app
 from core.erros import CredenciaisInvalidas, DadosInvalidos, FalhaIA, NaoEncontrado
 
@@ -25,7 +25,7 @@ class ServiceQueFalha:
 
 class TestTraducaoDeErrosParaHttp(unittest.TestCase):
     def setUp(self):
-        app.dependency_overrides[exigir_dono_ou_admin] = (
+        app.dependency_overrides[exigir_dono] = (
             lambda: SimpleNamespace(id=1, papel="usuario")
         )
         self.services_originais = (

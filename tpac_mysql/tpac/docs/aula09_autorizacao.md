@@ -34,8 +34,8 @@
 | Rota / ação | Permitido | Negado | Motivo | Status negado | Hoje |
 |---|---|---|---|---|---|
 | `POST /usuarios` | Pública | — | Cadastro aberto. O body não aceita `papel`, então ninguém se cadastra como admin. | — | ✅ |
-| `GET /usuarios` | Admin | Anônimo, Outro, Dono | Expõe os nomes de todas as contas e facilita adivinhar logins. | 401 / 403 | ❌ |
-| `GET /usuarios/{id}` | Dono, Admin | Anônimo, Outro | Perfil pessoal. | 401 / 403 | ❌ |
+| `GET /usuarios` | Admin | Anônimo, Outro, Dono | Expõe os nomes de todas as contas e facilita adivinhar logins. | 401 / 403 | ✅ |
+| `GET /usuarios/{id}` | Dono, Admin | Anônimo, Outro | Perfil pessoal. | 401 / 403 | ✅ |
 | `PUT /usuarios/{id}` | Dono, Admin | Anônimo, Outro | O `nome` é o identificador de login. | 401 / 403 | ✅ |
 | `DELETE /usuarios/{id}` | Dono, Admin | Anônimo, Outro | Ação irreversível, com exclusão em cascata de tarefas e passos. | 401 / 403 | ✅ |
 
@@ -43,29 +43,29 @@
 
 | Rota / ação | Permitido | Negado | Motivo | Status negado | Hoje |
 |---|---|---|---|---|---|
-| `POST /usuarios/{id}/mensagens` | Dono | Anônimo, Outro, Admin | Age em nome do usuário. | 401 / 403 | ❌ |
-| `POST /usuarios/{id}/perguntas` | Dono | Anônimo, Outro, Admin | Consome a cota do Gemini e usa o estilo do usuário. | 401 / 403 | ❌ |
-| `POST /usuarios/{id}/conversa` | Dono | Anônimo, Outro, Admin | Ao final, cria uma tarefa na conta do usuário. | 401 / 403 | ❌ |
+| `POST /usuarios/{id}/mensagens` | Dono | Anônimo, Outro, Admin | Age em nome do usuário. | 401 / 403 | ✅ |
+| `POST /usuarios/{id}/perguntas` | Dono | Anônimo, Outro, Admin | Consome a cota do Gemini e usa o estilo do usuário. | 401 / 403 | ✅ |
+| `POST /usuarios/{id}/conversa` | Dono | Anônimo, Outro, Admin | Ao final, cria uma tarefa na conta do usuário. | 401 / 403 | ✅ |
 
 ### Tarefas
 
 | Rota / ação | Permitido | Negado | Motivo | Status negado | Hoje |
 |---|---|---|---|---|---|
-| `GET /usuarios/{id}/tarefas` | Dono | Anônimo, Outro, Admin | Tarefas são pessoais. | 401 / 403 | 🟠 Exige token, ainda sem 403 |
-| `POST /usuarios/{id}/tarefas` | Dono | Anônimo, Outro, Admin | Ninguém cria tarefas na conta de outra pessoa. | 401 / 403 | ❌ |
-| `GET /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Tarefa pessoal. | 401 / 403 | ❌ |
-| `PUT /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Altera dados pessoais. | 401 / 403 | ❌ |
-| `PATCH /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Marcar progresso é ação da própria pessoa. | 401 / 403 | ❌ |
-| `DELETE /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Irreversível; exclui também os passos. | 401 / 403 | ❌ |
+| `GET /usuarios/{id}/tarefas` | Dono | Anônimo, Outro, Admin | Tarefas são pessoais. | 401 / 403 | ✅ |
+| `POST /usuarios/{id}/tarefas` | Dono | Anônimo, Outro, Admin | Ninguém cria tarefas na conta de outra pessoa. | 401 / 403 | ✅ |
+| `GET /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Tarefa pessoal. | 401 / 403 | ✅ |
+| `PUT /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Altera dados pessoais. | 401 / 403 | ✅ |
+| `PATCH /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Marcar progresso é ação da própria pessoa. | 401 / 403 | ✅ |
+| `DELETE /usuarios/{id}/tarefas/{tarefa_id}` | Dono | Anônimo, Outro, Admin | Irreversível; exclui também os passos. | 401 / 403 | ✅ |
 
 ### Passos
 
 | Rota / ação | Permitido | Negado | Motivo | Status negado | Hoje |
 |---|---|---|---|---|---|
-| `GET .../tarefas/{tarefa_id}/passos` | Dono | Anônimo, Outro, Admin | Parte de uma tarefa pessoal. | 401 / 403 | ❌ |
-| `POST .../passos/gerar` | Dono | Anônimo, Outro, Admin | Consome a cota do Gemini. | 401 / 403 | ❌ |
-| `PATCH .../passos/{passo_id}` | Dono | Anônimo, Outro, Admin | Marcar progresso é ação da própria pessoa. | 401 / 403 | ❌ |
-| `DELETE .../passos/{passo_id}` | Dono | Anônimo, Outro, Admin | Irreversível. | 401 / 403 | ❌ |
+| `GET .../tarefas/{tarefa_id}/passos` | Dono | Anônimo, Outro, Admin | Parte de uma tarefa pessoal. | 401 / 403 | ✅ |
+| `POST .../passos/gerar` | Dono | Anônimo, Outro, Admin | Consome a cota do Gemini. | 401 / 403 | ✅ |
+| `PATCH .../passos/{passo_id}` | Dono | Anônimo, Outro, Admin | Marcar progresso é ação da própria pessoa. | 401 / 403 | ✅ |
+| `DELETE .../passos/{passo_id}` | Dono | Anônimo, Outro, Admin | Irreversível. | 401 / 403 | ✅ |
 
 ## 3. Regras transversais
 
@@ -75,7 +75,7 @@
 - **403 antes de 404 para quem não é admin:** um usuário comum que pede o `id` de outra conta recebe 403 mesmo que esse `id` não exista, para não revelar quais contas existem. Só o admin vê o 404.
 - **O papel é lido do banco a cada requisição**, não do token: uma mudança de papel vale na requisição seguinte.
 - **Esconder botões no front não é autorização:** a API nega a requisição mesmo quando chamada diretamente (`/docs`, PowerShell, Postman).
-- **O console (`python main.py`) acessa o banco diretamente** e não aplica autenticação; é uma ferramenta local de desenvolvimento, como o Workbench.
+- **O console (`python main.py`) usa os services diretamente, sem passar pela API,** e não aplica autenticação; é uma ferramenta local de desenvolvimento, como o Workbench.
 
 ## 4. Arquitetura: arquivos alterados
 
@@ -86,6 +86,10 @@
 | `models/usuario.py` | Campo `papel` (`Enum`, com `default` e `server_default` = `usuario`) |
 | `api/dependencias.py` | Nova dependência `exigir_dono_ou_admin` (autorização), que reutiliza `obter_usuario_autenticado` (autenticação) |
 | `api/rotas_usuarios.py` | `Depends(exigir_dono_ou_admin)` em `DELETE` e `PUT /usuarios/{usuario_id}` |
+| `api/dependencias.py` (depois) | Novas dependências `exigir_dono` (tarefas, passos e IA) e `exigir_admin` (`GET /usuarios`) |
+| `api/rotas_tarefas.py` (depois) | `Depends(exigir_dono)` no `APIRouter`: vale para todas as rotas de tarefas e passos |
+| `api/rotas_usuarios.py` (depois) | `exigir_admin` em `GET /usuarios`, `exigir_dono_ou_admin` em `GET /usuarios/{id}`, `exigir_dono` nas rotas de IA |
+| `tests/test_api_permissoes.py` | Testa esta matriz para os perfis Dono, Outro e Admin |
 
 **Não foram alterados:** services, controllers e repositories. A autorização acontece antes da ação, sem mexer na regra de negócio. A verificação vive em um único lugar (`api/dependencias.py`), e cada rota só declara o que precisa.
 
@@ -108,7 +112,4 @@ token válido          → obter_usuario_autenticado   → falha: 401
 
 ## 6. Pendências
 
-- Dependência `exigir_dono` para tarefas, passos e IA (só o dono, conforme a decisão sobre o admin).
-- Proteger `GET /usuarios` (só admin) e `GET /usuarios/{id}` (dono ou admin).
-- Criar `.gitignore` com `.env` antes de publicar o repositório.
 - Decidir se `/docs` fica visível ao publicar a API.
