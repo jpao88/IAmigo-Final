@@ -1,5 +1,8 @@
-﻿.env
+.env
 __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Capturas das aulas: ficam só no computador, fora do repositório
+tpac_mysql/tpac/evidencias/

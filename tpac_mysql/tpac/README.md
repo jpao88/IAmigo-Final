@@ -61,6 +61,14 @@ Para abrir o Swagger, inicie a API antes, dentro da pasta do projeto:
 uvicorn api_app:app --reload
 ```
 
+## 6. Testes automatizados
+
+Dentro da pasta do projeto (não precisam do MySQL nem do Gemini):
+
+```bash
+python -m unittest discover -s tests
+```
+
 ## Arquivos principais
 
 - `database.sql`: cria o banco, tabelas e dados de exemplo.
