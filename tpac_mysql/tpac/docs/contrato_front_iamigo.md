@@ -23,6 +23,7 @@ Endpoints usados pelo fluxo **Login → painel de tarefas**.
 | `403` | Autenticado, mas sem permissão | Mostra aviso de falta de permissão, **sem** encerrar a sessão |
 | `404` | Recurso não encontrado | Mostra a mensagem |
 | `422` | Dados inválidos | Mostra a mensagem junto ao formulário |
+| `500` | Falha técnica no servidor | Mostra a mensagem genérica de `detail` |
 | Sem resposta | API desligada ou erro de rede | Mostra "Não foi possível conectar ao servidor." |
 
 ---
@@ -146,8 +147,7 @@ Se o usuário não tiver tarefas, a resposta é `{"dados": []}`. Isso **não** �
 |---|---|---|
 | `401` | `"Token de acesso ausente."` | O header `Authorization` não foi enviado |
 | `401` | `"Token inválido ou expirado."` | Token alterado, expirado ou de uma conta excluída |
-| `404` | `"Usuário não encontrado."` | O `usuario_id` da URL não existe |
-| `403` | `"Você não tem permissão para esta ação."` | Token de outro usuário (**previsto**, ver Pendências) |
+| `403` | `"Você não tem permissão para esta ação."` | O `usuario_id` da URL não é o do token (outro usuário, inclusive admin, ou um `id` que não existe) |
 
 ```json
 { "detail": "Token inválido ou expirado." }
@@ -160,5 +160,3 @@ Se o usuário não tiver tarefas, a resposta é `{"dados": []}`. Isso **não** �
 | Pendência | Situação atual | Impacto no front | Ajuste previsto |
 |---|---|---|---|
 | Validação do FastAPI em formato de lista | Campos ausentes ou com tipo inválido retornam `{"detail": [ ... ]}`; as regras de negócio retornam `{"detail": "texto"}` | `login.js` verifica se `detail` é texto | Handler único em `api_app.py` para devolver sempre texto, atualizando `login.js` junto |
-| Erro técnico com status errado | `GET /usuarios/{id}/tarefas` devolve 404 quando o banco falha (o login já devolve 500) | O painel mostra a mensagem genérica; o status engana | Devolver 500 quando o controller indicar falha técnica |
-| 403 nas tarefas | `GET /usuarios/{id}/tarefas` exige token, mas ainda permite que um usuário leia tarefas de outro | O front já trata 403, mas a API ainda não o envia nesta rota | Dependência `exigir_dono` em `api/dependencias.py` |

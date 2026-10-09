@@ -1,5 +1,3 @@
-const API_URL = 'http://127.0.0.1:8000';
-
 const formulario = document.querySelector('#formulario');
 const mensagem = document.querySelector('#mensagem');
 const botao = formulario.querySelector('button[type="submit"]');
@@ -31,15 +29,12 @@ formulario.addEventListener('submit', async (evento) => {
     return;
   }
 
-  const token = sessionStorage.getItem('token');
-  const usuarioTexto = sessionStorage.getItem('usuario');
+  const usuario = obterUsuario();
 
-  if (!token || !usuarioTexto) {
+  if (!obterToken() || !usuario) {
     mostrarMensagem('Faça login para criar tarefas.', 'erro');
     return;
   }
-
-  const usuario = JSON.parse(usuarioTexto);
 
   const dados = {
     titulo: titulo.value.trim(),
@@ -52,21 +47,17 @@ formulario.addEventListener('submit', async (evento) => {
   mostrarMensagem('Aguarde.');
 
   try {
-    const resposta = await fetch(`${API_URL}/usuarios/${usuario.id}/tarefas`, {
+    const resposta = await requisicaoAutenticada(`/usuarios/${usuario.id}/tarefas`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dados)
     });
 
-    const resultado = await resposta.json().catch(() => ({}));
-
-    if (resposta.status === 401) {
-      mostrarMensagem('Sua sessão expirou. Faça login novamente.', 'erro');
+    if (!resposta) {
       return;
     }
+
+    const resultado = await resposta.json().catch(() => ({}));
 
     if (!resposta.ok) {
       const texto = typeof resultado.detail === 'string'

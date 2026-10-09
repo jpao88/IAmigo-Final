@@ -6,7 +6,7 @@ const botaoSair = document.getElementById("botao-sair");
 const usuario = obterUsuario();
 
 if (!obterToken() || !usuario) {
-  window.location.href = "index.html";
+  irParaLogin();
 } else {
   saudacao.textContent = `Olá, ${usuario.nome}`;
   carregarTarefas();
@@ -74,5 +74,5 @@ function mostrarErro(texto) {
 
 botaoSair.addEventListener("click", () => {
   limparSessao();
-  window.location.href = "index.html";
+  irParaLogin();
 });
