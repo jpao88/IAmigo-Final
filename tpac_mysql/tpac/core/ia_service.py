@@ -1,6 +1,11 @@
+import logging
 import os
 from google import genai
 from google.genai import types
+
+from core.erros import FalhaIA
+
+logger = logging.getLogger(__name__)
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 client = genai.Client() if API_KEY else None
@@ -35,14 +40,19 @@ def _obter_instrucao_tpac(estilo_usuario: str) -> str:
     return base_prompt
 
 
+def _linhas_da_resposta(response) -> list:
+    return [
+        linha.strip()
+        for linha in (response.text or "").split("\n")
+        if linha.strip()
+    ]
+
+
 def obter_resposta_ia(pergunta: str, estilo_usuario: str) -> list:
     """Conecta ao Gemini para responder dúvidas gerais de estudos ou organização."""
 
     if not client:
-        return [
-            "Erro: Variável de ambiente GEMINI_API_KEY não configurada.",
-            "Por favor, configure sua chave de API."
-        ]
+        raise FalhaIA("GEMINI_API_KEY não configurada. Configure sua chave de API.")
 
     system_instruction = _obter_instrucao_tpac(estilo_usuario)
 
@@ -55,22 +65,23 @@ def obter_resposta_ia(pergunta: str, estilo_usuario: str) -> list:
                 temperature=0.3
             ),
         )
+    except Exception as erro:
+        logger.exception("Falha ao consultar o Gemini")
+        raise FalhaIA("Não foi possível falar com a IA agora. Tente novamente.") from erro
 
-        return [
-            linha.strip()
-            for linha in response.text.split("\n")
-            if linha.strip()
-        ]
+    linhas = _linhas_da_resposta(response)
 
-    except Exception as e:
-        return [f"Erro ao nos comunicarmos com a IA: {str(e)}"]
+    if not linhas:
+        raise FalhaIA("A IA não retornou uma resposta.")
+
+    return linhas
 
 
 def gerar_passos_tarefa(titulo_tarefa: str) -> list:
     """Usa o Gemini para quebrar uma tarefa macro em micro-ações sequenciais."""
 
     if not client:
-        return ["Configure a GEMINI_API_KEY para habilitar esta função."]
+        raise FalhaIA("GEMINI_API_KEY não configurada. Configure sua chave de API.")
 
     prompt = (
         f"Quebre a seguinte tarefa em exatamente 3 ou 4 passos sequenciais, "
@@ -92,21 +103,17 @@ def gerar_passos_tarefa(titulo_tarefa: str) -> list:
                 temperature=0.2,
             ),
         )
+    except Exception as erro:
+        logger.exception("Falha ao gerar passos no Gemini")
+        raise FalhaIA("Não foi possível gerar os passos agora. Tente novamente.") from erro
 
-        passos = [
-            linha.strip()
-            for linha in response.text.split("\n")
-            if linha.strip()
-        ]
+    passos = [
+        linha.lstrip("0123456789.-* ")
+        for linha in _linhas_da_resposta(response)
+    ]
+    passos = [passo for passo in passos if passo]
 
-        passos_limpos = []
+    if not passos:
+        raise FalhaIA("A IA não retornou nenhum passo.")
 
-        for p in passos:
-            p_limpo = p.lstrip("0123456789.-* ")
-            if p_limpo:
-                passos_limpos.append(p_limpo)
-
-        return passos_limpos
-
-    except Exception as e:
-        return [f"Não foi possível gerar os passos: {str(e)}"]
+    return passos

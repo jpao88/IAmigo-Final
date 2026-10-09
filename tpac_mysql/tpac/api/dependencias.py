@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from controllers.usuario_controller import UsuarioController
+from core.erros import NaoEncontrado
 from core.seguranca import validar_token_acesso
 
 bearer = HTTPBearer(auto_error=False)
@@ -26,20 +27,9 @@ def obter_usuario_autenticado(
 
     try:
         usuario_id = validar_token_acesso(credenciais.credentials)
-    except ValueError:
+        return controller.buscar_perfil(usuario_id)
+    except (ValueError, NaoEncontrado):
         raise _nao_autenticado("Token inválido ou expirado.")
-
-    resposta = controller.buscar_perfil(usuario_id)
-
-    if not resposta["sucesso"]:
-        if resposta["tipo"] == "FALHA_TECNICA":
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=resposta["mensagem"]
-            )
-        raise _nao_autenticado("Token inválido ou expirado.")
-
-    return resposta["dados"]
 
 
 def exigir_dono_ou_admin(

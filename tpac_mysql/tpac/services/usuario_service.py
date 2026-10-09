@@ -1,6 +1,7 @@
 from repositories.usuario_repository import UsuarioRepository
 from core.interpretador import interpretar_mensagem as interpretar_texto
 from core.ia_service import obter_resposta_ia
+from core.erros import CredenciaisInvalidas, DadosInvalidos, NaoEncontrado
 from core.conversa import ConversaTarefa, ESPERANDO_PRAZO, ESPERANDO_PRIORIDADE
 from core.seguranca import gerar_hash_senha, verificar_senha
 from services.tarefa_service import TarefaService
@@ -10,6 +11,22 @@ class UsuarioService:
     def __init__(self, repository=None):
         self.repository = repository or UsuarioRepository()
 
+    def _validar_perfil(self, nome, estilo_instrucao):
+        nome = nome.strip()
+
+        if not nome:
+            raise DadosInvalidos("O nome não pode ficar vazio.")
+
+        if len(nome) < 3:
+            raise DadosInvalidos("O nome precisa ter pelo menos 3 caracteres.")
+
+        if estilo_instrucao not in {"direto", "detalhado"}:
+            raise DadosInvalidos(
+                "O estilo deve ser 'direto' ou 'detalhado'."
+            )
+
+        return nome
+
     def listar_usuarios(self):
         return self.repository.listar()
 
@@ -17,33 +34,22 @@ class UsuarioService:
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
         return usuario
 
     def criar_usuario(self, nome, estilo_instrucao, senha=None):
-        nome = nome.strip()
-
-        if not nome:
-            raise ValueError("O nome não pode ficar vazio.")
-
-        if len(nome) < 3:
-            raise ValueError("O nome precisa ter pelo menos 3 caracteres.")
-
-        if estilo_instrucao not in {"direto", "detalhado"}:
-            raise ValueError(
-                "O estilo deve ser 'direto' ou 'detalhado'."
-            )
+        nome = self._validar_perfil(nome, estilo_instrucao)
 
         existente = self.repository.buscar_por_nome(nome)
         if existente is not None:
-            raise ValueError("Já existe um perfil com esse nome.")
+            raise DadosInvalidos("Já existe um perfil com esse nome.")
 
         senha_hash = None
 
         if senha is not None:
             if len(senha) < 6:
-                raise ValueError("A senha precisa ter pelo menos 6 caracteres.")
+                raise DadosInvalidos("A senha precisa ter pelo menos 6 caracteres.")
 
             senha_hash = gerar_hash_senha(senha)
 
@@ -53,24 +59,13 @@ class UsuarioService:
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
-        nome = nome.strip()
-
-        if not nome:
-            raise ValueError("O nome não pode ficar vazio.")
-
-        if len(nome) < 3:
-            raise ValueError("O nome precisa ter pelo menos 3 caracteres.")
-
-        if estilo_instrucao not in {"direto", "detalhado"}:
-            raise ValueError(
-                "O estilo deve ser 'direto' ou 'detalhado'."
-            )
+        nome = self._validar_perfil(nome, estilo_instrucao)
 
         existente = self.repository.buscar_por_nome(nome)
         if existente is not None and existente.id != usuario_id:
-            raise ValueError("Já existe um perfil com esse nome.")
+            raise DadosInvalidos("Já existe um perfil com esse nome.")
 
         return self.repository.atualizar(usuario_id, nome, estilo_instrucao)
 
@@ -78,7 +73,7 @@ class UsuarioService:
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
         self.repository.excluir(usuario_id)
 
@@ -90,7 +85,7 @@ class UsuarioService:
             or not usuario.senha_hash
             or not verificar_senha(senha, usuario.senha_hash)
         ):
-            raise ValueError("Nome ou senha inválidos.")
+            raise CredenciaisInvalidas("Nome ou senha inválidos.")
 
         return usuario
 
@@ -98,7 +93,7 @@ class UsuarioService:
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
         return interpretar_texto(texto)
 
@@ -106,25 +101,20 @@ class UsuarioService:
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
-        linhas = obter_resposta_ia(pergunta, usuario.estilo_instrucao)
-
-        if linhas and linhas[0].startswith("Erro"):
-            raise RuntimeError(linhas[0])
-
-        return linhas
+        return obter_resposta_ia(pergunta, usuario.estilo_instrucao)
 
     def avancar_conversa(self, usuario_id, mensagem, estado=None, tarefa_parcial=None):
         usuario = self.repository.buscar_por_id(usuario_id)
 
         if usuario is None:
-            raise ValueError("Usuário não encontrado.")
+            raise NaoEncontrado("Usuário não encontrado.")
 
         estados_validos = {None, ESPERANDO_PRAZO, ESPERANDO_PRIORIDADE}
 
         if estado not in estados_validos:
-            raise ValueError("Estado de conversa inválido.")
+            raise DadosInvalidos("Estado de conversa inválido.")
 
         tarefa_service = TarefaService()
 
@@ -144,7 +134,7 @@ class UsuarioService:
             interpretacao = interpretar_texto(mensagem)
 
             if interpretacao["intencao"] != "registrar_tarefa":
-                raise ValueError(
+                raise DadosInvalidos(
                     "Não consegui identificar uma tarefa nessa mensagem."
                 )
 

@@ -1,205 +1,49 @@
-import logging
-
 from core.seguranca import gerar_token_acesso
 from services.usuario_service import UsuarioService
 
-logger = logging.getLogger("uvicorn.error")
-
 
 class UsuarioController:
+    """Repassa os pedidos da API para o service.
+
+    Os erros sobem como exceções de core/erros.py e viram
+    respostas HTTP nos handlers registrados em api_app.py.
+    """
+
     def __init__(self, service=None):
         self.service = service or UsuarioService()
 
     def listar_perfis(self):
         return self.service.listar_usuarios()
 
+    def buscar_perfil(self, usuario_id):
+        return self.service.buscar_usuario(usuario_id)
+
     def criar_perfil(self, nome, estilo_instrucao, senha=None):
-        try:
-            usuario = self.service.criar_usuario(nome, estilo_instrucao, senha)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "mensagem": f"Perfil {usuario.nome} criado.",
-                "dados": usuario
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em criar_perfil")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        return self.service.criar_usuario(nome, estilo_instrucao, senha)
 
     def atualizar_perfil(self, usuario_id, nome, estilo_instrucao):
-        try:
-            usuario = self.service.atualizar_usuario(usuario_id, nome, estilo_instrucao)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": usuario
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em atualizar_perfil")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        return self.service.atualizar_usuario(usuario_id, nome, estilo_instrucao)
 
     def excluir_perfil(self, usuario_id):
-        try:
-            self.service.excluir_usuario(usuario_id)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO"
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em excluir_perfil")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
-
-    def buscar_perfil(self, usuario_id):
-        try:
-            usuario = self.service.buscar_usuario(usuario_id)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": usuario
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em buscar_perfil")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        self.service.excluir_usuario(usuario_id)
 
     def interpretar_mensagem(self, usuario_id, texto):
-        try:
-            resultado = self.service.interpretar_mensagem(usuario_id, texto)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": resultado
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em interpretar_mensagem")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        return self.service.interpretar_mensagem(usuario_id, texto)
 
     def responder_pergunta(self, usuario_id, pergunta):
-        try:
-            linhas = self.service.responder_pergunta(usuario_id, pergunta)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": linhas
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except RuntimeError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_IA",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em responder_pergunta")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        return self.service.responder_pergunta(usuario_id, pergunta)
 
     def avancar_conversa(self, usuario_id, mensagem, estado=None, tarefa_parcial=None):
-        try:
-            resultado = self.service.avancar_conversa(
-                usuario_id, mensagem, estado, tarefa_parcial
-            )
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": resultado
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em avancar_conversa")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        return self.service.avancar_conversa(
+            usuario_id, mensagem, estado, tarefa_parcial
+        )
 
-    
     def autenticar(self, nome, senha):
-        try:
-            usuario = self.service.autenticar(nome, senha)
-            token, expira_em = gerar_token_acesso(usuario.id, usuario.nome)
-            return {
-                "sucesso": True,
-                "tipo": "SUCESSO",
-                "dados": {
-                    "usuario": usuario,
-                    "access_token": token,
-                    "token_type": "bearer",
-                    "expires_in": expira_em
-                }
-            }
-        except ValueError as erro:
-            return {
-                "sucesso": False,
-                "tipo": "REGRA_NEGOCIO",
-                "mensagem": str(erro)
-            }
-        except Exception:
-            logger.exception("Falha técnica em autenticar")
-            return {
-                "sucesso": False,
-                "tipo": "FALHA_TECNICA",
-                "mensagem": "Não foi possível concluir a operação."
-            }
+        usuario = self.service.autenticar(nome, senha)
+        token, expira_em = gerar_token_acesso(usuario.id, usuario.nome)
+        return {
+            "usuario": usuario,
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": expira_em
+        }

@@ -10,4 +10,8 @@ casos = [
 ]
 
 for nome, estilo in casos:
-    print(controller.criar_perfil(nome, estilo))
+    try:
+        usuario = controller.criar_perfil(nome, estilo)
+        print("SUCESSO:", usuario.nome)
+    except ValueError as erro:
+        print(f"{type(erro).__name__}:", erro)

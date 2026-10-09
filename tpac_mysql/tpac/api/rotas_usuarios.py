@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 
 from api.dependencias import exigir_dono_ou_admin
@@ -61,35 +61,21 @@ def listar_usuarios():
 
 @router.get("/{usuario_id}")
 def buscar_usuario(usuario_id: int):
-    resposta = controller.buscar_perfil(usuario_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": usuario_publico(resposta["dados"])
+        "dados": usuario_publico(controller.buscar_perfil(usuario_id))
     }
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def criar_usuario(dados: NovoUsuario):
-    resposta = controller.criar_perfil(
+    usuario = controller.criar_perfil(
         dados.nome,
         dados.estilo_instrucao,
         dados.senha
     )
 
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=422,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": usuario_publico(resposta["dados"])
+        "dados": usuario_publico(usuario)
     }
 
 
@@ -99,19 +85,12 @@ def atualizar_usuario(
     dados: AtualizarUsuario,
     usuario_autenticado=Depends(exigir_dono_ou_admin)
 ):
-    resposta = controller.atualizar_perfil(
+    usuario = controller.atualizar_perfil(
         usuario_id, dados.nome, dados.estilo_instrucao
     )
 
-    if not resposta["sucesso"]:
-        status_code = 404 if resposta["mensagem"] == "Usuário não encontrado." else 422
-        raise HTTPException(
-            status_code=status_code,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": usuario_publico(resposta["dados"])
+        "dados": usuario_publico(usuario)
     }
 
 
@@ -120,13 +99,7 @@ def excluir_usuario(
     usuario_id: int,
     usuario_autenticado=Depends(exigir_dono_ou_admin)
 ):
-    resposta = controller.excluir_perfil(usuario_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
+    controller.excluir_perfil(usuario_id)
 
 
 @router.post("/{usuario_id}/mensagens")
@@ -135,16 +108,8 @@ def interpretar_mensagem(
     dados: Mensagem,
     usuario_autenticado=Depends(exigir_dono_ou_admin)
 ):
-    resposta = controller.interpretar_mensagem(usuario_id, dados.texto)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.interpretar_mensagem(usuario_id, dados.texto)
     }
 
 
@@ -154,17 +119,8 @@ def responder_pergunta(
     dados: Pergunta,
     usuario_autenticado=Depends(exigir_dono_ou_admin)
 ):
-    resposta = controller.responder_pergunta(usuario_id, dados.texto)
-
-    if not resposta["sucesso"]:
-        status_code = 503 if resposta["tipo"] == "FALHA_IA" else 404
-        raise HTTPException(
-            status_code=status_code,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.responder_pergunta(usuario_id, dados.texto)
     }
 
 
@@ -174,17 +130,10 @@ def avancar_conversa(
     dados: MensagemConversa,
     usuario_autenticado=Depends(exigir_dono_ou_admin)
 ):
-    resposta = controller.avancar_conversa(
+    resultado = controller.avancar_conversa(
         usuario_id, dados.mensagem, dados.estado, dados.tarefa_parcial
     )
 
-    if not resposta["sucesso"]:
-        status_code = 404 if resposta["mensagem"] == "Usuário não encontrado." else 422
-        raise HTTPException(
-            status_code=status_code,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": resultado
     }

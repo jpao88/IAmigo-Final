@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 
 from api.dependencias import exigir_dono_ou_admin
@@ -26,22 +26,14 @@ class NovaTarefa(BaseModel):
 
 @router.get("")
 def listar_tarefas(usuario_id: int):
-    resposta = controller.listar_tarefas(usuario_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.listar_tarefas(usuario_id)
     }
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def criar_tarefa(usuario_id: int, dados: NovaTarefa):
-    resposta = controller.criar_tarefa(
+    tarefa = controller.criar_tarefa(
         usuario_id,
         dados.tipo,
         dados.titulo,
@@ -50,50 +42,28 @@ def criar_tarefa(usuario_id: int, dados: NovaTarefa):
         dados.prazo
     )
 
-    if not resposta["sucesso"]:
-        status_code = 404 if resposta["mensagem"] == "Usuário não encontrado." else 422
-        raise HTTPException(
-            status_code=status_code,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": tarefa
     }
 
 
 @router.patch("/{tarefa_id}")
 def alternar_status(usuario_id: int, tarefa_id: int):
-    resposta = controller.alternar_status(usuario_id, tarefa_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.alternar_status(usuario_id, tarefa_id)
     }
+
 
 @router.get("/{tarefa_id}")
 def buscar_tarefa(usuario_id: int, tarefa_id: int):
-    resposta = controller.buscar_tarefa(usuario_id, tarefa_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.buscar_tarefa(usuario_id, tarefa_id)
     }
 
 
 @router.put("/{tarefa_id}")
 def atualizar_tarefa(usuario_id: int, tarefa_id: int, dados: NovaTarefa):
-    resposta = controller.atualizar_tarefa(
+    tarefa = controller.atualizar_tarefa(
         usuario_id,
         tarefa_id,
         dados.tipo,
@@ -103,83 +73,37 @@ def atualizar_tarefa(usuario_id: int, tarefa_id: int, dados: NovaTarefa):
         dados.prazo
     )
 
-    if not resposta["sucesso"]:
-        nao_encontrado = resposta["mensagem"] in {
-            "Usuário não encontrado.",
-            "Tarefa não encontrada."
-        }
-        raise HTTPException(
-            status_code=404 if nao_encontrado else 422,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": tarefa
     }
+
 
 @router.delete("/{tarefa_id}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir_tarefa(usuario_id: int, tarefa_id: int):
-    resposta = controller.excluir_tarefa(usuario_id, tarefa_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
+    controller.excluir_tarefa(usuario_id, tarefa_id)
 
 
 @router.get("/{tarefa_id}/passos")
 def listar_passos(usuario_id: int, tarefa_id: int):
-    resposta = controller.listar_passos(usuario_id, tarefa_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.listar_passos(usuario_id, tarefa_id)
     }
 
 
 @router.post("/{tarefa_id}/passos/gerar", status_code=status.HTTP_201_CREATED)
 def gerar_passos(usuario_id: int, tarefa_id: int):
-    resposta = controller.gerar_passos(usuario_id, tarefa_id)
-
-    if not resposta["sucesso"]:
-        status_code = 503 if resposta["tipo"] == "FALHA_IA" else 404
-        raise HTTPException(
-            status_code=status_code,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.gerar_passos(usuario_id, tarefa_id)
     }
 
 
 @router.patch("/{tarefa_id}/passos/{passo_id}")
 def alternar_status_passo(usuario_id: int, tarefa_id: int, passo_id: int):
-    resposta = controller.alternar_status_passo(usuario_id, tarefa_id, passo_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
-
     return {
-        "dados": resposta["dados"]
+        "dados": controller.alternar_status_passo(usuario_id, tarefa_id, passo_id)
     }
 
 
 @router.delete("/{tarefa_id}/passos/{passo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def excluir_passo(usuario_id: int, tarefa_id: int, passo_id: int):
-    resposta = controller.excluir_passo(usuario_id, tarefa_id, passo_id)
-
-    if not resposta["sucesso"]:
-        raise HTTPException(
-            status_code=404,
-            detail=resposta["mensagem"]
-        )
+    controller.excluir_passo(usuario_id, tarefa_id, passo_id)

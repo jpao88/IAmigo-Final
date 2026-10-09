@@ -12,8 +12,8 @@ while True:
 
     if opcao == "1":
         print("\nPerfis:")
-        for nome in controller.listar_perfis():
-            print("-", nome)
+        for usuario in controller.listar_perfis():
+            print("-", usuario.nome)
 
     elif opcao == "2":
         nome = input("Nome: ").strip()
@@ -21,8 +21,11 @@ while True:
         print("2. Detalhado")
         escolha = input("Estilo: ").strip()
         estilo = "detalhado" if escolha == "2" else "direto"
-        resposta = controller.criar_perfil(nome, estilo)
-        print(resposta["mensagem"])
+        try:
+            usuario = controller.criar_perfil(nome, estilo)
+            print(f"Perfil {usuario.nome} criado.")
+        except ValueError as erro:
+            print(erro)
 
     elif opcao == "3":
         break
