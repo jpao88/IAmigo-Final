@@ -4,12 +4,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from api.dependencias import obter_usuario_autenticado
+from api.dependencias import exigir_dono_ou_admin
 from controllers.tarefa_controller import TarefaController
 
 router = APIRouter(
     prefix="/usuarios/{usuario_id}/tarefas",
-    tags=["tarefas"]
+    tags=["tarefas"],
+    dependencies=[Depends(exigir_dono_ou_admin)]
 )
 
 controller = TarefaController()
@@ -24,10 +25,7 @@ class NovaTarefa(BaseModel):
 
 
 @router.get("")
-def listar_tarefas(
-    usuario_id: int,
-    usuario_autenticado=Depends(obter_usuario_autenticado)
-):
+def listar_tarefas(usuario_id: int):
     resposta = controller.listar_tarefas(usuario_id)
 
     if not resposta["sucesso"]:
@@ -128,9 +126,6 @@ def excluir_tarefa(usuario_id: int, tarefa_id: int):
             status_code=404,
             detail=resposta["mensagem"]
         )
-
-
-@router.patch("/{tarefa_id}")
 
 
 @router.get("/{tarefa_id}/passos")

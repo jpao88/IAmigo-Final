@@ -130,7 +130,11 @@ def excluir_usuario(
 
 
 @router.post("/{usuario_id}/mensagens")
-def interpretar_mensagem(usuario_id: int, dados: Mensagem):
+def interpretar_mensagem(
+    usuario_id: int,
+    dados: Mensagem,
+    usuario_autenticado=Depends(exigir_dono_ou_admin)
+):
     resposta = controller.interpretar_mensagem(usuario_id, dados.texto)
 
     if not resposta["sucesso"]:
@@ -145,7 +149,11 @@ def interpretar_mensagem(usuario_id: int, dados: Mensagem):
 
 
 @router.post("/{usuario_id}/perguntas")
-def responder_pergunta(usuario_id: int, dados: Pergunta):
+def responder_pergunta(
+    usuario_id: int,
+    dados: Pergunta,
+    usuario_autenticado=Depends(exigir_dono_ou_admin)
+):
     resposta = controller.responder_pergunta(usuario_id, dados.texto)
 
     if not resposta["sucesso"]:
@@ -161,7 +169,11 @@ def responder_pergunta(usuario_id: int, dados: Pergunta):
 
 
 @router.post("/{usuario_id}/conversa")
-def avancar_conversa(usuario_id: int, dados: MensagemConversa):
+def avancar_conversa(
+    usuario_id: int,
+    dados: MensagemConversa,
+    usuario_autenticado=Depends(exigir_dono_ou_admin)
+):
     resposta = controller.avancar_conversa(
         usuario_id, dados.mensagem, dados.estado, dados.tarefa_parcial
     )

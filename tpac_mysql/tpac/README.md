@@ -8,7 +8,7 @@ Este projeto foi ajustado para usar banco de dados MySQL no lugar do arquivo JSO
 2. Conecte no seu servidor local.
 3. Abra o arquivo `database.sql`.
 4. Execute o script completo clicando no raio.
-5. Confirme se apareceu o banco `tpac_db`.
+5. Confirme se apareceu o banco `tea_db`.
 
 ## 2. Instalar as dependências do Python
 
@@ -27,7 +27,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=sua_senha_do_mysql
-DB_NAME=tpac_db
+DB_NAME=tea_db
 ```
 
 ## 4. Executar o sistema
