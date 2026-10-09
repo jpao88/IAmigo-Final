@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from config.database import SessionLocal
 from models.tarefa import Tarefa
@@ -6,10 +7,12 @@ from models.tarefa import Tarefa
 
 class TarefaRepository:
     def listar_por_usuario(self, usuario_id):
+        """Devolve as tarefas já com tarefa.passos carregado (1 consulta extra no total)."""
         with SessionLocal() as session:
             comando = (
                 select(Tarefa)
                 .where(Tarefa.usuario_id == usuario_id)
+                .options(selectinload(Tarefa.passos))
                 .order_by(Tarefa.id)
             )
             return list(session.scalars(comando))

@@ -1,14 +1,13 @@
 import logging
-import os
 from google import genai
 from google.genai import types
 
+from config.settings import settings
 from core.erros import FalhaIA
 
 logger = logging.getLogger(__name__)
 
-API_KEY = os.environ.get("GEMINI_API_KEY")
-client = genai.Client() if API_KEY else None
+client = genai.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
 
 MODELO_GEMINI = "gemini-2.5-flash"
 

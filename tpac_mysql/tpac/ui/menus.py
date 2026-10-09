@@ -66,7 +66,7 @@ def gerenciar_tarefas_menu(usuario, tipo: str, titulo: str):
 
                 print(f"{idx}. {status} {t.titulo}")
 
-                for p in tarefa_service.listar_passos(usuario.id, t.id):
+                for p in t.passos:
                     print(f"    └─ 📌 {p.texto}")
 
                 print()

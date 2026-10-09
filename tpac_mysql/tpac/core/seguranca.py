@@ -1,10 +1,11 @@
 import hashlib
 import hmac
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
+
+from config.settings import settings
 
 ALGORITMO = "pbkdf2_sha256"
 ITERACOES = 600_000
@@ -39,14 +40,17 @@ def verificar_senha(senha: str, senha_hash: str) -> bool:
     return hmac.compare_digest(resumo.hex(), resumo_hex)
 
 
-def gerar_token_acesso(usuario_id: int, nome: str):
-    """Gera um JWT assinado. Devolve o token e sua duração em segundos."""
-    segredo = os.getenv("JWT_SECRET")
-
-    if not segredo:
+def _obter_segredo() -> str:
+    if not settings.jwt_secret:
         raise RuntimeError("JWT_SECRET não configurado no .env.")
 
-    minutos = int(os.getenv("JWT_EXPIRA_MINUTOS", "60"))
+    return settings.jwt_secret
+
+
+def gerar_token_acesso(usuario_id: int, nome: str):
+    """Gera um JWT assinado. Devolve o token e sua duração em segundos."""
+    segredo = _obter_segredo()
+    minutos = settings.jwt_expira_minutos
     agora = datetime.now(timezone.utc)
 
     payload = {
@@ -63,10 +67,7 @@ def gerar_token_acesso(usuario_id: int, nome: str):
 
 def validar_token_acesso(token: str) -> int:
     """Valida assinatura e expiração. Devolve o id do usuário (sub)."""
-    segredo = os.getenv("JWT_SECRET")
-
-    if not segredo:
-        raise RuntimeError("JWT_SECRET não configurado no .env.")
+    segredo = _obter_segredo()
 
     try:
         payload = jwt.decode(

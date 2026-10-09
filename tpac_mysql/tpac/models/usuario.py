@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
-from sqlalchemy import Enum, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import TIMESTAMP, Enum, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from config.database import Base
@@ -12,7 +12,7 @@ class Usuario(Base):
     __tablename__ = "usuarios"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    nome: Mapped[str] = mapped_column(unique=True, nullable=False)
+    nome: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     estilo_instrucao: Mapped[str] = mapped_column(
         Enum("direto", "detalhado", name="estilo_instrucao_enum"),
         nullable=False,
@@ -25,4 +25,12 @@ class Usuario(Base):
         server_default="usuario",
     )
     senha_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    criado_em: Mapped[datetime] = mapped_column(server_default=func.now())
+    criado_em: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, server_default=func.now())
+
+    # passive_deletes: quem apaga as tarefas é o ON DELETE CASCADE do banco.
+    tarefas: Mapped[List["Tarefa"]] = relationship(
+        back_populates="usuario",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="Tarefa.id",
+    )
